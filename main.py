@@ -33,18 +33,18 @@ LINK_PRODAVEC = "https://t.me/YOUR_CHANNEL2"
 LINK_GRUZCHIK = "https://t.me/YOUR_CHANNEL3"
 LINK_KASSIR = "https://t.me/YOUR_CHANNEL4"
 LINK_OTHER = "https://t.me/YOUR_CHANNEL_OTHER"
-LINK_PODTV = "https://t.me/YOUR_CHANNEL5"
-LINK_MUZH = "https://t.me/YOUR_CHANNEL6"
-LINK_JENA = "https://t.me/YOUR_CHANNEL7"
-PARTNER1 = "https://t.me/YOUR_PARTNER1"
-PARTNER2 = "https://t.me/YOUR_PARTNER2"
-PARTNER3 = "https://t.me/YOUR_PARTNER3"
+LINK_PODTV = "https://t.me/+mY3hHEOcA1hjNjll"
+LINK_MUZH = "https://t.me/+78CQ-szbfq9iNjVl" 
+LINK_JENA = "https://t.me/+2O-E6-ujo05iMzJl" 
+PARTNER1 = "https://t.me/+yQnB4LWBmEw3Njdl" 
+PARTNER2 = "https://t.me/+po9rWTrL1dAzMTc1" 
+PARTNER3 = "https://t.me/+tVmHFavEeRw5YTBl" 
 REGION_LINKS = {
-    'east': "https://t.me/YOUR_EAST_CHANNEL",
-    'central': "https://t.me/YOUR_CENTRAL_CHANNEL",
-    'west': "https://t.me/YOUR_WEST_CHANNEL",
-    'south': "https://t.me/YOUR_SOUTH_CHANNEL",
-    'north': "https://t.me/YOUR_NORTH_CHANNEL",
+    'east': "https://t.me/+cmc5r38zfi5jYWU1", 
+    'central': "https://t.me/+j2qKmGqgaV81NjZl",
+    'west': "https://t.me/+RV6bxd_J8S5iMDBl",
+    'south': "https://t.me/+bZvcyN4hMa8xODI1",
+    'north': "https://t.me/+b6O1CD4LeHQzYjFl",
 }
 
 (
