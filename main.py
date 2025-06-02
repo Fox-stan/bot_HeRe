@@ -157,6 +157,11 @@ async def handle_vacancy_choice(update: Update, context: ContextTypes.DEFAULT_TY
                 ])
             )
         await asyncio.sleep(3)
+        # Новое! Сообщение с возрастом после паузы:
+        await context.bot.send_message(
+            chat_id,
+            "Скільки вам років?"
+        )
         return STEP_AGE
     else:
         await context.bot.send_message(
@@ -196,6 +201,10 @@ async def handle_other_text(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             ])
         )
     await asyncio.sleep(3)
+    await context.bot.send_message(
+        chat_id,
+        "Скільки вам років?"
+    )
     return STEP_AGE
 
 async def handle_age(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -217,7 +226,7 @@ async def handle_about(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
                 [InlineKeyboardButton("Канал 1", url=PARTNER1)],
                 [InlineKeyboardButton("Канал 2", url=PARTNER2)],
                 [InlineKeyboardButton("Канал 3", url=PARTNER3)],
-                [InlineKeyboardButton("Пропустити", callback_data='skip_partners')],
+                [InlineKeyboardButton("Відправити", callback_data='send_anyway')],
             ])
         )
     await asyncio.sleep(3)
@@ -246,7 +255,7 @@ def main():
             STEP_REGION: [],
             STEP_AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_age)],
             STEP_ABOUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_about)],
-            STEP_PARTNER: [CallbackQueryHandler(handle_partner, pattern="skip_partners")],
+            STEP_PARTNER: [CallbackQueryHandler(handle_partner, pattern="send_anyway")],
         },
         fallbacks=[CommandHandler('start', start)],
         allow_reentry=True
