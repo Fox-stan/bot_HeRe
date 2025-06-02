@@ -223,9 +223,9 @@ async def handle_about(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
             photo=img,
             caption="Щоб підвищити шанси знайти роботу та виділитись серед інших кандидатів — підпишіться на Telegram-канали наших партнерів:",
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("Канал 1", url=PARTNER1)],
-                [InlineKeyboardButton("Канал 2", url=PARTNER2)],
-                [InlineKeyboardButton("Канал 3", url=PARTNER3)],
+                [InlineKeyboardButton("🟤 Вектор | Україна", url=PARTNER1)],
+                [InlineKeyboardButton("ФОКУС UA", url=PARTNER2)],
+                [InlineKeyboardButton("🚨 Надзвичайне| Події LIVE", url=PARTNER3)],
                 [InlineKeyboardButton("Відправити", callback_data='send_anyway')],
             ])
         )
