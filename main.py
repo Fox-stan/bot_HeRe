@@ -168,10 +168,7 @@ async def handle_other_text(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             ])
         )
     await asyncio.sleep(3)
-    return STEP_REGION
-
-async def handle_region(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    chat_id = update.effective_user.id
+     # После паузы СРАЗУ отправляем регионы
     with open("4.jpeg", "rb") as img:
         await context.bot.send_photo(
             chat_id=chat_id,
