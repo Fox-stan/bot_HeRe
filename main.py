@@ -48,8 +48,8 @@ REGION_LINKS = {
 }
 
 (
-    STEP_VACANCY, STEP_OTHER_TEXT, STEP_CONFIRM, STEP_GENDER,
-    STEP_REGION, STEP_AGE, STEP_ABOUT, STEP_PARTNER
+    STEP_VACANCY, STEP_OTHER_TEXT, STEP_CONFIRM,
+    STEP_GENDER, STEP_REGION, STEP_AGE, STEP_ABOUT, STEP_PARTNER
 ) = range(8)
 
 user_data = {}
@@ -131,7 +131,7 @@ async def handle_vacancy_choice(update: Update, context: ContextTypes.DEFAULT_TY
     await asyncio.sleep(3)
 
     if chosen.startswith('v_'):
-        # Сразу следующий шаг: пол
+        # Фото "стать" + пауза + регионы
         with open("3.jpeg", "rb") as img:
             await context.bot.send_photo(
                 chat_id=chat_id,
@@ -143,7 +143,21 @@ async def handle_vacancy_choice(update: Update, context: ContextTypes.DEFAULT_TY
                 ])
             )
         await asyncio.sleep(3)
-        return STEP_REGION
+        with open("4.jpeg", "rb") as img:
+            await context.bot.send_photo(
+                chat_id=chat_id,
+                photo=img,
+                caption="З якого ви регіону?",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🇺🇦 Східна Україна", url=REGION_LINKS['east'])],
+                    [InlineKeyboardButton("🇺🇦 Центральна Україна", url=REGION_LINKS['central'])],
+                    [InlineKeyboardButton("🇺🇦 Західна Україна", url=REGION_LINKS['west'])],
+                    [InlineKeyboardButton("🇺🇦 Південна Україна", url=REGION_LINKS['south'])],
+                    [InlineKeyboardButton("🇺🇦 Північна Україна", url=REGION_LINKS['north'])],
+                ])
+            )
+        await asyncio.sleep(3)
+        return STEP_AGE
     else:
         await context.bot.send_message(
             chat_id,
@@ -168,7 +182,6 @@ async def handle_other_text(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             ])
         )
     await asyncio.sleep(3)
-     # После паузы СРАЗУ отправляем регионы
     with open("4.jpeg", "rb") as img:
         await context.bot.send_photo(
             chat_id=chat_id,
@@ -230,7 +243,7 @@ def main():
             STEP_OTHER_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_other_text)],
             STEP_CONFIRM: [],
             STEP_GENDER: [],
-            STEP_REGION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_region)],
+            STEP_REGION: [],
             STEP_AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_age)],
             STEP_ABOUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_about)],
             STEP_PARTNER: [CallbackQueryHandler(handle_partner, pattern="skip_partners")],
