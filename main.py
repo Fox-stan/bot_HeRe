@@ -1,5 +1,6 @@
 import os
 import threading
+import asyncio
 from telegram import (
     Update,
     InlineKeyboardButton,
@@ -27,7 +28,6 @@ def home():
 def run_flask():
     flask_app.run(host="0.0.0.0", port=8080)
 
-# ВСТАВ СВОЇ ПОСИЛАННЯ
 LINK_KURYER = "https://t.me/YOUR_CHANNEL1"
 LINK_PRODAVEC = "https://t.me/YOUR_CHANNEL2"
 LINK_GRUZCHIK = "https://t.me/YOUR_CHANNEL3"
@@ -39,12 +39,18 @@ LINK_JENA = "https://t.me/YOUR_CHANNEL7"
 PARTNER1 = "https://t.me/YOUR_PARTNER1"
 PARTNER2 = "https://t.me/YOUR_PARTNER2"
 PARTNER3 = "https://t.me/YOUR_PARTNER3"
+REGION_LINKS = {
+    'east': "https://t.me/YOUR_EAST_CHANNEL",
+    'central': "https://t.me/YOUR_CENTRAL_CHANNEL",
+    'west': "https://t.me/YOUR_WEST_CHANNEL",
+    'south': "https://t.me/YOUR_SOUTH_CHANNEL",
+    'north': "https://t.me/YOUR_NORTH_CHANNEL",
+}
 
-# Константы шагов анкеты
 (
-    STEP_VACANCY, STEP_OTHER, STEP_CONFIRM, STEP_VACANCY_TEXT, STEP_GENDER,
+    STEP_VACANCY, STEP_OTHER_TEXT, STEP_CONFIRM, STEP_GENDER,
     STEP_REGION, STEP_AGE, STEP_ABOUT, STEP_PARTNER
-) = range(9)
+) = range(8)
 
 user_data = {}
 
@@ -59,7 +65,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await context.bot.send_message(chat_id, "Терміново шукаємо працівників:")
 
-    # Вакансія 1: Кур'єр
     await context.bot.send_message(
         chat_id,
         "🔥 Кур'єр — 40 000 грн\n"
@@ -69,7 +74,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "✅ Вільний графік",
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Обрати", callback_data="v_kuryer")]])
     )
-    # Вакансія 2: Продавець
     await context.bot.send_message(
         chat_id,
         "🔥 Продавець — 45 000 грн\n"
@@ -79,7 +83,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "✅ Вільний графік",
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Обрати", callback_data="v_prodavets")]])
     )
-    # Вакансія 3: Вантажник
     await context.bot.send_message(
         chat_id,
         "🔥 Вантажник — 43 000 грн\n"
@@ -89,7 +92,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "✅ Пунктуальність",
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Обрати", callback_data="v_gruzchik")]])
     )
-    # Вакансія 4: Касир
     await context.bot.send_message(
         chat_id,
         "🔥 Касир — 42 000 грн\n"
@@ -100,7 +102,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Обрати", callback_data="v_kassir")]])
     )
 
-    # После вакансий — кнопка "Дивитись ще 26 вакансій"
     await context.bot.send_message(
         chat_id,
         "Або залиш заявку на іншу вакансію",
@@ -115,102 +116,81 @@ async def handle_vacancy_choice(update: Update, context: ContextTypes.DEFAULT_TY
     query = update.callback_query
     await query.answer()
     chat_id = query.from_user.id
-
-    vacancy_map = {
-        "v_kuryer": LINK_KURYER,
-        "v_prodavets": LINK_PRODAVEC,
-        "v_gruzchik": LINK_GRUZCHIK,
-        "v_kassir": LINK_KASSIR,
-        "other": LINK_OTHER
-    }
     chosen = query.data
     user_data[chat_id]["chosen_vacancy"] = chosen
 
-    # 8: подтверждение + фото (2.jpeg)
     with open("2.jpeg", "rb") as img:
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=img,
             caption="✅ Підтвердіть, що ви не бот, щоб почати пошук гарячих вакансій!",
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("✅ Підтвердити!", url=LINK_PODTV, callback_data="confirm")]
+                [InlineKeyboardButton("✅ Підтвердити!", url=LINK_PODTV)]
             ])
         )
-    # Далее — ждем следующий шаг
-    return STEP_CONFIRM
+    await asyncio.sleep(3)
 
-async def handle_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # 9: текстовая вакансия
+    if chosen.startswith('v_'):
+        # Сразу следующий шаг: пол
+        with open("3.jpeg", "rb") as img:
+            await context.bot.send_photo(
+                chat_id=chat_id,
+                photo=img,
+                caption="Оберіть вашу стать:",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("Чоловік", url=LINK_MUZH)],
+                    [InlineKeyboardButton("Жінка", url=LINK_JENA)]
+                ])
+            )
+        await asyncio.sleep(3)
+        return STEP_REGION
+    else:
+        await context.bot.send_message(
+            chat_id,
+            "Напишіть, яка вакансія вас цікавить!",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return STEP_OTHER_TEXT
+
+async def handle_other_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     chat_id = update.effective_user.id
-    await context.bot.send_message(
-        chat_id,
-        "Напишіть, яка вакансія вас цікавить!",
-        reply_markup=ReplyKeyboardRemove()
-    )
-    return STEP_VACANCY_TEXT
+    user_data[chat_id]["other_vacancy_text"] = update.message.text
 
-async def handle_vacancy_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    chat_id = update.effective_user.id
-    user_data[chat_id]["vacancy_text"] = update.message.text
-
-    # 10: Вибір статі + фото (3.jpeg)
+    await asyncio.sleep(3)
     with open("3.jpeg", "rb") as img:
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=img,
             caption="Оберіть вашу стать:",
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("Чоловік", url=LINK_MUZH, callback_data="male")],
-                [InlineKeyboardButton("Жінка", url=LINK_JENA, callback_data="female")]
+                [InlineKeyboardButton("Чоловік", url=LINK_MUZH)],
+                [InlineKeyboardButton("Жінка", url=LINK_JENA)]
             ])
         )
-    return STEP_GENDER
+    await asyncio.sleep(3)
+    return STEP_REGION
 
-async def handle_gender(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def handle_region(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     chat_id = update.effective_user.id
-    # 11: Вибір регіону + фото (4.jpeg)
     with open("4.jpeg", "rb") as img:
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=img,
             caption="З якого ви регіону?",
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🇺🇦 Східна Україна", callback_data='region_east')],
-                [InlineKeyboardButton("🇺🇦 Центральна Україна", callback_data='region_central')],
-                [InlineKeyboardButton("🇺🇦 Західна Україна", callback_data='region_west')],
-                [InlineKeyboardButton("🇺🇦 Південна Україна", callback_data='region_south')],
-                [InlineKeyboardButton("🇺🇦 Північна Україна", callback_data='region_north')],
+                [InlineKeyboardButton("🇺🇦 Східна Україна", url=REGION_LINKS['east'])],
+                [InlineKeyboardButton("🇺🇦 Центральна Україна", url=REGION_LINKS['central'])],
+                [InlineKeyboardButton("🇺🇦 Західна Україна", url=REGION_LINKS['west'])],
+                [InlineKeyboardButton("🇺🇦 Південна Україна", url=REGION_LINKS['south'])],
+                [InlineKeyboardButton("🇺🇦 Північна Україна", url=REGION_LINKS['north'])],
             ])
         )
-    return STEP_REGION
-
-async def handle_region(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    query = update.callback_query
-    await query.answer()
-    chat_id = query.from_user.id
-    region_map = {
-        'region_east': "Східна Україна",
-        'region_central': "Центральна Україна",
-        'region_west': "Західна Україна",
-        'region_south': "Південна Україна",
-        'region_north': "Північна Україна",
-    }
-    region = region_map.get(query.data, "Інший")
-    user_data[chat_id]['region'] = region
-
-    # 12: Вік + фото (1.jpeg)
-    with open("1.jpeg", "rb") as img:
-        await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=img,
-            caption="Скільки вам років?"
-        )
+    await asyncio.sleep(3)
     return STEP_AGE
 
 async def handle_age(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     chat_id = update.effective_user.id
     user_data[chat_id]['age'] = update.message.text
-    # 13: Про себе
     await update.message.reply_text("Розкажіть трохи про себе або надішліть своє резюме!")
     return STEP_ABOUT
 
@@ -218,19 +198,19 @@ async def handle_about(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     chat_id = update.effective_user.id
     user_data[chat_id]['about'] = update.message.text
 
-    # 14: Партнери + фото (5.jpeg)
     with open("5.jpeg", "rb") as img:
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=img,
             caption="Щоб підвищити шанси знайти роботу та виділитись серед інших кандидатів — підпишіться на Telegram-канали наших партнерів:",
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("Канал 1", url=PARTNER1, callback_data="p1")],
-                [InlineKeyboardButton("Канал 2", url=PARTNER2, callback_data="p2")],
-                [InlineKeyboardButton("Канал 3", url=PARTNER3, callback_data="p3")],
+                [InlineKeyboardButton("Канал 1", url=PARTNER1)],
+                [InlineKeyboardButton("Канал 2", url=PARTNER2)],
+                [InlineKeyboardButton("Канал 3", url=PARTNER3)],
                 [InlineKeyboardButton("Пропустити", callback_data='skip_partners')],
             ])
         )
+    await asyncio.sleep(3)
     return STEP_PARTNER
 
 async def handle_partner(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -250,13 +230,13 @@ def main():
         entry_points=[CommandHandler('start', start)],
         states={
             STEP_VACANCY: [CallbackQueryHandler(handle_vacancy_choice)],
-            STEP_CONFIRM: [CallbackQueryHandler(handle_confirm, pattern="confirm")],
-            STEP_VACANCY_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_vacancy_text)],
-            STEP_GENDER: [CallbackQueryHandler(handle_gender, pattern="male|female")],
-            STEP_REGION: [CallbackQueryHandler(handle_region, pattern="region_.*")],
+            STEP_OTHER_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_other_text)],
+            STEP_CONFIRM: [],
+            STEP_GENDER: [],
+            STEP_REGION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_region)],
             STEP_AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_age)],
             STEP_ABOUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_about)],
-            STEP_PARTNER: [CallbackQueryHandler(handle_partner, pattern="p1|p2|p3|skip_partners")],
+            STEP_PARTNER: [CallbackQueryHandler(handle_partner, pattern="skip_partners")],
         },
         fallbacks=[CommandHandler('start', start)],
         allow_reentry=True
