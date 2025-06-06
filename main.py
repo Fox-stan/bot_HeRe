@@ -15,18 +15,43 @@ from telegram.ext import (
     MessageHandler,
     filters,
     CallbackQueryHandler,
+    ChatJoinRequestHandler,
 )
 from flask import Flask
+from aiohttp import ClientSession, TCPConnector
+
+from DBManager import DBManager
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHANNELS = [
+    -1002451226832,
+    -1002599197728,
+    -1002618219543,
+    -1002669832980,
+    -1002648070121,
+    -1002688260177,
+    -1002589814978,
+    -1002566204798,
+    -1002592832472,
+    -1002640991456,
+    -1002428903920,
+    -1002644410680,
+    -1002269277900,
+]  # сюди додати айді канала в форматі -10012345567
+POSTBACK_URL = "https://tele-check.lol/7fa6ffd/postback"  # тут постбек урл, без слеша в кінці
 
 flask_app = Flask(__name__)
+
+
 @flask_app.route('/')
 def home():
     return "✅ Бот працює!"
 
+
 def run_flask():
+    print("🌐 Flask запускається на порту 8080...")
     flask_app.run(host="0.0.0.0", port=8080)
+
 
 LINK_KURYER = "https://t.me/YOUR_CHANNEL1"
 LINK_PRODAVEC = "https://t.me/YOUR_CHANNEL2"
@@ -54,9 +79,43 @@ REGION_LINKS = {
 
 user_data = {}
 
+
+async def send_start_postback(sub_id):
+    """
+    Функція для надсилання постбеку на старт бота
+    :param sub_id: саб айді користувача зі старт параметру
+    :return:
+    """
+    try:
+        async with ClientSession(connector=TCPConnector(ssl=False)) as session:
+            async with session.get(f"{POSTBACK_URL}/?subid={sub_id}&status=start_bot&from=bot") as response:
+                print(f'Postback for start bot sent\t User {sub_id}. Status code - [{response.status}]')
+    except Exception as e:
+        print(e)
+
+
+async def send_subscribe_postback(sub_id, index):
+    """
+    Функція для надсилання постбеку на підписку на канал
+    :param sub_id: саб айді користувача зі старт параметру
+    :param index: індекс каналу (номер у списку)
+    :return:
+    """
+    try:
+        async with ClientSession(connector=TCPConnector(ssl=False)) as session:
+            async with session.get(f"{POSTBACK_URL}/?subid={sub_id}&status=subscribe{index+1}&from=bot") as response:
+                print(f'Postback for start bot sent\t User {sub_id}. Status code - [{response.status}]')
+    except Exception as e:
+        print(e)
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_user.id
     user_data[chat_id] = {}
+    subid = context.args[0]
+    status = DBManager.add_user(chat_id, subid)
+    if status:
+        await send_start_postback(subid)
 
     await update.message.reply_text(
         "👋 Вітаємо в “Гарячих вакансіях Україна”!\n"
@@ -111,6 +170,26 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     return STEP_VACANCY
+
+
+async def join_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Функція-хендлер для апрува нових користувачів
+    :param update:
+    :param context:
+    :return:
+    """
+    try:
+        chat_id = update.chat_join_request.chat.id
+        print(chat_id)
+        if chat_id in CHANNELS:
+            idx = CHANNELS.index(chat_id)
+            user_id = update.chat_join_request.from_user.id
+            subid = DBManager.get_sub_id(user_id)
+            await send_subscribe_postback(idx, subid)
+    except Exception as e:
+        print(e)
+
 
 async def handle_vacancy_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
@@ -171,6 +250,7 @@ async def handle_vacancy_choice(update: Update, context: ContextTypes.DEFAULT_TY
         )
         return STEP_OTHER_TEXT
 
+
 async def handle_other_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     chat_id = update.effective_user.id
     user_data[chat_id]["other_vacancy_text"] = update.message.text
@@ -207,11 +287,13 @@ async def handle_other_text(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     )
     return STEP_AGE
 
+
 async def handle_age(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     chat_id = update.effective_user.id
     user_data[chat_id]['age'] = update.message.text
     await update.message.reply_text("Розкажіть трохи про себе або надішліть своє резюме!")
     return STEP_ABOUT
+
 
 async def handle_about(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     chat_id = update.effective_user.id
@@ -232,6 +314,7 @@ async def handle_about(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     await asyncio.sleep(3)
     return STEP_PARTNER
 
+
 async def handle_partner(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.callback_query.answer()
     await update.callback_query.message.reply_text(
@@ -240,10 +323,21 @@ async def handle_partner(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     )
     return ConversationHandler.END
 
-def main():
-    threading.Thread(target=run_flask, daemon=True).start()
+import logging
 
+
+async def log_all_updates(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logging.debug(f"🔁 Got update: {update}")
+
+
+def main():
+    print("Додаємо фласк у тред")
+    threading.Thread(target=run_flask, daemon=True).start()
+    print("Тред створено")
+
+    print("Білдім тг застосунок")
     app = ApplicationBuilder().token(BOT_TOKEN).build()
+    print("Застосунок збілділи")
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
@@ -260,9 +354,16 @@ def main():
         fallbacks=[CommandHandler('start', start)],
         allow_reentry=True
     )
+    print("Підключаємо хендлери")
 
     app.add_handler(conv_handler)
+    print("conv_handler підлючено")
+    app.add_handler(ChatJoinRequestHandler(join_request))
+    print("ChatJoinRequestHandler підлючено")
+
+    print("🔁 Бот запущено, очікуємо події...")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()
