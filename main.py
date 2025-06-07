@@ -88,7 +88,7 @@ async def send_start_postback(sub_id):
     """
     try:
         async with ClientSession(connector=TCPConnector(ssl=False)) as session:
-            async with session.get(f"{POSTBACK_URL}/?subid={sub_id}&status=start_bot&from=bot") as response:
+            async with session.get(f"{POSTBACK_URL}?subid={sub_id}&status=start_bot&from=bot") as response:
                 print(f'Postback for start bot sent\t User {sub_id}. Status code - [{response.status}]')
     except Exception as e:
         print(e)
@@ -103,7 +103,7 @@ async def send_subscribe_postback(sub_id, index):
     """
     try:
         async with ClientSession(connector=TCPConnector(ssl=False)) as session:
-            async with session.get(f"{POSTBACK_URL}/?subid={sub_id}&status=subscribe{index+1}&from=bot") as response:
+            async with session.get(f"{POSTBACK_URL}?subid={sub_id}&status=subscribe{index+1}&from=bot") as response:
                 print(f'Postback for start bot sent\t User {sub_id}. Status code - [{response.status}]')
     except Exception as e:
         print(e)
