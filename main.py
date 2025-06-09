@@ -53,7 +53,6 @@ class DBManager:
         try:
             user, created = User.get_or_create(tg_id=tg_id, defaults={'sub_id': sub_id})
             if not created:
-                # Если пользователь уже есть, обновим sub_id (на случай, если он изменился)
                 if user.sub_id != sub_id:
                     user.sub_id = sub_id
                     user.save()
@@ -88,7 +87,7 @@ def run_flask():
     flask_app.run(host="0.0.0.0", port=8080)
 
 
-# --- YOUR ORIGINAL CONSTANTS AND FUNCTIONS ---
+# --- CONSTANTS ---
 
 CHANNELS = [
     -1002451226832,
@@ -129,6 +128,15 @@ REGION_LINKS = {
 
 user_data = {}
 
+# Словарь для быстрого доступа к названию и зарплате вакансии по callback_data
+jobs_dict = {
+    "v_kuryer": ("Кур'єр", "40 000 грн"),
+    "v_prodavets": ("Продавець", "45 000 грн"),
+    "v_gruzchik": ("Вантажник", "43 000 грн"),
+    "v_kassir": ("Касир", "42 000 грн"),
+}
+
+# --- POSTBACK HELPERS ---
 
 async def send_start_postback(sub_id):
     try:
@@ -160,11 +168,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     jobs = [
-    ("Кур'єр", "v_kuryer", "40 000 грн", "Доставка замовлень пішки, на велосипеді або авто.\n✅ Досвід не обов’язковий\n✅ Видаємо самокат\n✅ Вільний графік"),
-    ("Продавець", "v_prodavets", "45 000 грн", "Робота в магазині: допомога покупцям, викладка товару.\n✅ Оплачувана відпустка\n✅ Видаємо самокат\n✅ Вільний графік"),
-    ("Вантажник", "v_gruzchik", "43 000 грн", "Завантаження й розвантаження товару на складі/у магазині.\n✅ Фізична витривалість\n✅ Досвід не обов’язковий\n✅ Пунктуальність"),
-    ("Касир", "v_kassir", "42 000 грн", "Робота в магазині: допомога покупцям, викладка товару.\n✅ Вільний графік\n✅ Досвід не обов’язковий\n✅ Вільний графік"),
-]
+        ("Кур'єр", "v_kuryer", "40 000 грн", "Доставка замовлень пішки, на велосипеді або авто.\n✅ Досвід не обов’язковий\n✅ Видаємо самокат\n✅ Вільний графік"),
+        ("Продавець", "v_prodavets", "45 000 грн", "Робота в магазині: допомога покупцям, викладка товару.\n✅ Оплачувана відпустка\n✅ Видаємо самокат\n✅ Вільний графік"),
+        ("Вантажник", "v_gruzchik", "43 000 грн", "Завантаження й розвантаження товару на складі/у магазині.\n✅ Фізична витривалість\n✅ Досвід не обов’язковий\n✅ Пунктуальність"),
+        ("Касир", "v_kassir", "42 000 грн", "Робота в магазині: допомога покупцям, викладка товару.\n✅ Вільний графік\n✅ Досвід не обов’язковий\n✅ Вільний графік"),
+    ]
 
     for title, data, salary, details in jobs:
         await context.bot.send_message(
@@ -191,10 +199,21 @@ async def handle_vacancy_choice(update: Update, context: ContextTypes.DEFAULT_TY
     chat_id = query.from_user.id
     user_data[chat_id] = {"chosen_vacancy": query.data}
 
+    job_key = query.data
+    title, salary = jobs_dict.get(job_key, ("Невідома вакансія", ""))
+
+    # Отправляем сообщение с выбранной вакансией и зарплатой
+    await context.bot.send_message(
+        chat_id,
+        f"Ви вибрали вакансію - {title} - {salary}\n"
+        "✅ Підтвердіть, що ви не бот, щоб почати пошук гарячих вакансій"
+    )
+
+    # Затем отправляем фото с кнопкой подтверждения
     await context.bot.send_photo(
         chat_id=chat_id,
         photo=open("2.jpeg", "rb"),
-        caption="✅ Підтвердіть, що ви не бот, щоб почати пошук гарячих вакансій!",
+        caption="",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("✅ Підтвердити!", url=LINK_PODTV)]
         ])
@@ -279,7 +298,7 @@ async def join_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(e)
 
 
-# --- Команды для работы с БД ---
+# --- DB TEST HANDLERS ---
 
 async def db_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_user.id
@@ -290,7 +309,6 @@ async def db_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def get_db(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Отправить файл базы данных пользователю"""
     db_path = "db.sqlite3"
     if os.path.exists(db_path):
         await update.message.reply_document(open(db_path, "rb"))
@@ -301,10 +319,7 @@ async def get_db(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # --- MAIN ---
 
 def main():
-    # Инициализация базы при старте бота
     DBManager.initialize()
-
-    # Запускаем Flask в отдельном потоке
     threading.Thread(target=run_flask, daemon=True).start()
 
     app = ApplicationBuilder().token(BOT_TOKEN).build()
@@ -325,6 +340,7 @@ def main():
     app.add_handler(CommandHandler("dbtest", db_test))
     app.add_handler(CommandHandler("getdb", get_db))
     app.add_handler(ChatJoinRequestHandler(join_request))
+
     app.run_polling()
 
 
