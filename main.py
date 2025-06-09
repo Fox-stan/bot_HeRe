@@ -219,7 +219,7 @@ async def handle_vacancy_choice(update: Update, context: ContextTypes.DEFAULT_TY
         ])
     )
 
-    await asyncio.sleep(3)
+    await asyncio.sleep(5)
     await context.bot.send_photo(
         chat_id=chat_id,
         photo=open("3.jpeg", "rb"),
@@ -229,7 +229,7 @@ async def handle_vacancy_choice(update: Update, context: ContextTypes.DEFAULT_TY
             [InlineKeyboardButton("Жінка", url=LINK_JENA)]
         ])
     )
-    await asyncio.sleep(3)
+    await asyncio.sleep(5)
     await context.bot.send_photo(
         chat_id=chat_id,
         photo=open("4.jpeg", "rb"),
@@ -242,8 +242,8 @@ async def handle_vacancy_choice(update: Update, context: ContextTypes.DEFAULT_TY
             [InlineKeyboardButton("🇺🇦 Північна Україна", url=REGION_LINKS['north'])],
         ])
     )
-    await asyncio.sleep(3)
-    await context.bot.send_message(chat_id, "Скільки вам років?")
+    await asyncio.sleep(5)
+    await context.bot.send_message(chat_id, "Скільки вам років? Напишіть, будь ласка, свій вік у відповідь на це повідомлення.")
     return STEP_AGE
 
 
@@ -267,7 +267,7 @@ async def handle_about(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     await context.bot.send_photo(
         chat_id=chat_id,
         photo=open("5.jpeg", "rb"),
-        caption="Підпишіться на канали партнерів, щоб підвищити шанси:",
+        caption="Підпишіться на канали наших партнерів – це збільшує ваші шанси отримати бажану вакансію швидше та відкриває доступ до найкращих можливостей першими!",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("🟤 Вектор | Україна", url=PARTNER1)],
             [InlineKeyboardButton("ФОКУС UA", url=PARTNER2)],
