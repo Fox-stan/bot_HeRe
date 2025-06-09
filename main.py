@@ -20,9 +20,75 @@ from telegram.ext import (
 from flask import Flask
 from aiohttp import ClientSession, TCPConnector
 
-from DBManager import DBManager
+from peewee import SqliteDatabase, Model, BigIntegerField, TextField
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")  # обязательно установи переменную окружения
+
+# --- DATABASE SETUP ---
+
+db = SqliteDatabase('db.sqlite3')
+
+
+class User(Model):
+    tg_id = BigIntegerField(unique=True)
+    sub_id = TextField()
+
+    def __repr__(self):
+        return f"{self.tg_id} - {self.sub_id}"
+
+    class Meta:
+        database = db
+
+
+class DBManager:
+
+    @classmethod
+    def initialize(cls):
+        db.connect()
+        db.create_tables([User], safe=True)
+        db.close()
+
+    @classmethod
+    def add_user(cls, tg_id, sub_id) -> bool:
+        try:
+            user, created = User.get_or_create(tg_id=tg_id, defaults={'sub_id': sub_id})
+            if not created:
+                # Если пользователь уже есть, обновим sub_id (на случай, если он изменился)
+                if user.sub_id != sub_id:
+                    user.sub_id = sub_id
+                    user.save()
+                print(f'User {tg_id} already in db')
+                return False
+            else:
+                print(f'User {tg_id} added to database')
+                return True
+        except Exception as e:
+            print(f'Error in add_user: {e}')
+            return False
+
+    @classmethod
+    def get_sub_id(cls, tg_id):
+        try:
+            user = User.get(User.tg_id == tg_id)
+            return user.sub_id
+        except User.DoesNotExist:
+            return None
+
+
+# --- FLASK APP ---
+
+flask_app = Flask(__name__)
+
+@flask_app.route('/')
+def home():
+    return "✅ Бот працює!"
+
+
+def run_flask():
+    flask_app.run(host="0.0.0.0", port=8080)
+
+
+# --- YOUR ORIGINAL CONSTANTS AND FUNCTIONS ---
 
 CHANNELS = [
     -1002451226832,
@@ -41,18 +107,6 @@ CHANNELS = [
 ]
 
 POSTBACK_URL = "https://tele-check.lol/7fa6ffd/postback"
-
-flask_app = Flask(__name__)
-
-
-@flask_app.route('/')
-def home():
-    return "✅ Бот працює!"
-
-
-def run_flask():
-    flask_app.run(host="0.0.0.0", port=8080)
-
 
 LINK_PODTV = "https://t.me/+mY3hHEOcA1hjNjll"
 LINK_MUZH = "https://t.me/+78CQ-szbfq9iNjVl"
@@ -91,6 +145,8 @@ async def send_subscribe_postback(index, sub_id):
     except Exception as e:
         print(e)
 
+
+# --- HANDLERS ---
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_user.id
@@ -222,7 +278,8 @@ async def join_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(e)
 
 
-# ✅ Команда для теста базы
+# --- Команды для работы с БД ---
+
 async def db_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_user.id
     test_sub_id = "test_subid123"
@@ -231,17 +288,33 @@ async def db_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"✅ DB Test\nДодано: {status}\nЗнайдено sub_id: {found}")
 
 
+async def get_db(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Отправить файл базы данных пользователю"""
+    db_path = "db.sqlite3"
+    if os.path.exists(db_path):
+        await update.message.reply_document(open(db_path, "rb"))
+    else:
+        await update.message.reply_text("Файл бази даних не знайдено.")
+
+
+# --- MAIN ---
+
 def main():
-    threading.Thread(target=run_flask).start()
+    # Инициализация базы при старте бота
+    DBManager.initialize()
+
+    # Запускаем Flask в отдельном потоке
+    threading.Thread(target=run_flask, daemon=True).start()
+
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
             STEP_VACANCY: [CallbackQueryHandler(handle_vacancy_choice)],
-            STEP_OTHER_TEXT: [MessageHandler(filters.TEXT, handle_other_text)],
-            STEP_AGE: [MessageHandler(filters.TEXT, handle_age)],
-            STEP_ABOUT: [MessageHandler(filters.TEXT, handle_about)],
+            STEP_OTHER_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_other_text)],
+            STEP_AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_age)],
+            STEP_ABOUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_about)],
             STEP_PARTNER: [CallbackQueryHandler(handle_partner)],
         },
         fallbacks=[],
@@ -249,6 +322,7 @@ def main():
 
     app.add_handler(conv_handler)
     app.add_handler(CommandHandler("dbtest", db_test))
+    app.add_handler(CommandHandler("getdb", get_db))
     app.add_handler(ChatJoinRequestHandler(join_request))
     app.run_polling()
 
