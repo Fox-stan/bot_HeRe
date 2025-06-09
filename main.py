@@ -160,7 +160,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     jobs = [
-        ("Кур'єр", "v_kuryer", "40 000 грн", "✅ Досвід не обов’язковий\n✅ Вільний графік"),
+        ("Кур'єр", "v_kuryer", "40 000 грн", "Доставка замовлень пішки, на велосипеді або авто.\n", "✅ Досвід не обов’язковий\n✅ Видаємо самокат\n✅ Вільний графік"),
         ("Продавець", "v_prodavets", "45 000 грн", "✅ Оплачувана відпустка"),
         ("Вантажник", "v_gruzchik", "43 000 грн", "✅ Фізична витривалість"),
         ("Касир", "v_kassir", "42 000 грн", "✅ Вільний графік"),
@@ -215,11 +215,11 @@ async def handle_vacancy_choice(update: Update, context: ContextTypes.DEFAULT_TY
         photo=open("4.jpeg", "rb"),
         caption="З якого ви регіону?",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("Схід", url=REGION_LINKS['east'])],
-            [InlineKeyboardButton("Центр", url=REGION_LINKS['central'])],
-            [InlineKeyboardButton("Захід", url=REGION_LINKS['west'])],
-            [InlineKeyboardButton("Південь", url=REGION_LINKS['south'])],
-            [InlineKeyboardButton("Північ", url=REGION_LINKS['north'])],
+            [InlineKeyboardButton("🇺🇦 Східна Україна", url=REGION_LINKS['east'])],
+            [InlineKeyboardButton("🇺🇦 Центральна Україна", url=REGION_LINKS['central'])],
+            [InlineKeyboardButton("🇺🇦 Західна Україна", url=REGION_LINKS['west'])],
+            [InlineKeyboardButton("🇺🇦 Південна Україна", url=REGION_LINKS['south'])],
+            [InlineKeyboardButton("🇺🇦 Північна Україна", url=REGION_LINKS['north'])],
         ])
     )
     await asyncio.sleep(3)
