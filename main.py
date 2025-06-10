@@ -107,7 +107,7 @@ CHANNELS = [
 
 POSTBACK_URL = "https://tele-check.lol/7fa6ffd/postback"
 
-LINK_PODTV = "https://t.me/+mY3hHEOcA1hjNjll"
+LINK_PODTV = "https://t.me/+izSIa4b7GjE5OWZk"
 LINK_MUZH = "https://t.me/+78CQ-szbfq9iNjVl"
 LINK_JENA = "https://t.me/+2O-E6-ujo05iMzJl"
 PARTNER1 = "https://t.me/+yQnB4LWBmEw3Njdl"
